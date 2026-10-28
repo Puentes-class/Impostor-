@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Descubre al Impostor - Desafío Galáctico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0d19;
+      --card-bg: rgba(22, 27, 51, 0.85);
+      --card-border: rgba(99, 102, 241, 0.3);
+      --accent-cyan: #06b6d4;
+      --accent-pink: #ec4899;
+      --accent-purple: #8b5cf6;
+      --accent-yellow: #f59e0b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --correct-color: #10b981;
+      --wrong-color: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    canvas#starsCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .game-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 2.3rem;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-pink));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(6, 182, 212, 0.3);
+      letter-spacing: 1px;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .stat-badge {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-badge span {
+      color: var(--accent-cyan);
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      margin-top: 15px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+
+    .question-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 20px;
+      width: 100%;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      margin-bottom: 25px;
+    }
+
+    .category-tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(139, 92, 246, 0.2);
+      border: 1px solid var(--accent-purple);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      color: #c084fc;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .question-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      width: 100%;
+    }
+
+    @media (min-width: 640px) {
+      .cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 12px 25px rgba(6, 182, 212, 0.25);
+    }
+
+    .card-svg-wrapper {
+      width: 100%;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .card-svg-wrapper svg {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .card-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+      color: #e5e7eb;
+    }
+
+    .card.correct {
+      border-color: var(--correct-color) !important;
+      background: rgba(16, 185, 129, 0.2) !important;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.4) !important;
+      animation: pulse-correct 0.6s ease;
+    }
+
+    .card.wrong {
+      border-color: var(--wrong-color) !important;
+      background: rgba(239, 68, 68, 0.2) !important;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.4) !important;
+      animation: shake 0.4s ease;
+    }
+
+    .card.disabled {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    @keyframes pulse-correct {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .explanation-modal {
+      margin-top: 25px;
+      width: 100%;
+      background: rgba(17, 24, 39, 0.95);
+      border: 2px solid var(--accent-purple);
+      border-radius: 16px;
+      padding: 20px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: fadeIn 0.4s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .explanation-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.3rem;
+      color: var(--accent-yellow);
+      margin-bottom: 8px;
+    }
+
+    .explanation-text {
+      font-size: 1rem;
+      line-height: 1.5;
+      color: #d1d5db;
+      margin-bottom: 15px;
+    }
+
+    .btn-next {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border: none;
+      color: #fff;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      padding: 12px 30px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn-next:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(6, 182, 212, 0.6);
+    }
+
+    /* Modal Fin de Juego */
+    .end-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .end-card {
+      background: var(--card-bg);
+      border: 2px solid var(--accent-cyan);
+      border-radius: 24px;
+      padding: 35px 25px;
+      text-align: center;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 0 40px rgba(6, 182, 212, 0.3);
+    }
+
+    .end-card h2 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 2rem;
+      color: var(--accent-yellow);
+      margin-bottom: 15px;
+    }
+
+    .end-card p {
+      font-size: 1.1rem;
+      color: #e5e7eb;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .score-summary {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 25px;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="starsCanvas"></canvas>
+
+  <div class="game-container">
+    <header>
+      <h1>🕵️ DESCUBRE AL IMPOSTOR</h1>
+      <div class="stats-bar">
+        <div class="stat-badge">Nivel: <span id="levelText">1 / 15</span></div>
+        <div class="stat-badge">Puntos: <span id="scoreText">0</span></div>
+        <div class="stat-badge">Racha: <span id="streakText">🔥 0</span></div>
+      </div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </header>
+
+    <main style="width: 100%;">
+      <div class="question-box">
+        <div class="category-tag" id="categoryTag">Astronomía</div>
+        <div class="question-title" id="questionTitle">¿Cuál de estos NO es un planeta principal del Sistema Solar?</div>
+      </div>
+
+      <div class="cards-grid" id="cardsGrid">
+        <!-- Las 4 tarjetas se insertan dinámicamente -->
+      </div>
+
+      <div class="explanation-modal" id="explanationModal">
+        <div class="explanation-title" id="explanationTitle">¡Correcto! 🎉</div>
+        <div class="explanation-text" id="explanationText">Plutón es un planeta enano desde el año 2006.</div>
+        <button class="btn-next" id="btnNext" onclick="nextLevel()">Siguiente Nivel 🚀</button>
+      </div>
+    </main>
+  </div>
+
+  <div class="end-modal" id="endModal">
+    <div class="end-card">
+      <h2>🏆 ¡DESAFÍO COMPLETADO!</h2>
+      <p id="endRank">¡Eres un Detective Galáctico de Nivel Leyenda!</p>
+      <div class="score-summary">
+        Puntuación Final: <span id="finalScore" style="color:var(--accent-cyan)">0</span> pts
+      </div>
+      <button class="btn-next" onclick="restartGame()">Jugar de Nuevo 🔄</button>
+    </div>
+  </div>
+
+  <script>
+    // System Stars Canvas Background
+    const canvas = document.getElementById('starsCanvas');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    function initStars() {
+      stars = [];
+      const numStars = Math.floor((canvas.width * canvas.height) / 3000);
+      for (let i = 0; i < numStars; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.5,
+          alpha: Math.random(),
+          speed: Math.random() * 0.02 + 0.005
+        });
+      }
+    }
+
+    function drawStars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(star => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.fill();
+        star.alpha += star.speed;
+        if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+      });
+      requestAnimationFrame(drawStars);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    drawStars();
+
+    // Web Audio API Synthesizer Sound FX
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'correct') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3); // A5
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } else if (type === 'wrong') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(90, audioCtx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      }
+    }
+
+    // Dataset completo de los 15 niveles
+    const levels = [
+      {
+        category: "Astronomía",
+        question: "¿Cuál de estos NO es considerado un planeta principal del Sistema Solar?",
+        explanation: "¡Plutón es el impostor! Fue clasificado como planeta enano en 2006 por la Unión Astronómica Internacional debido a su pequeño tamaño.",
+        options: [
+          { name: "Tierra", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#3b82f6"/><path d="M25 45 Q 35 30 55 35 T 75 55 Q 60 70 40 65 Z" fill="#22c55e"/><path d="M40 70 Q 55 85 70 75 Q 60 90 40 85 Z" fill="#22c55e"/></svg>` },
+          { name: "Júpiter", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="#d97706"/><rect x="10" y="35" width="80" height="8" fill="#b45309" rx="4"/><rect x="8" y="55" width="84" height="10" fill="#78350f" rx="5"/><circle cx="65" cy="60" r="7" fill="#ef4444"/></svg>` },
+          { name: "Marte", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="#ef4444"/><circle cx="35" cy="35" r="8" fill="#dc2626"/><circle cx="65" cy="55" r="12" fill="#b91c1c"/></svg>` },
+          { name: "Plutón", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="#9ca3af"/><path d="M42 45 Q 50 35 58 45 Q 62 55 50 65 Q 38 55 42 45 Z" fill="#f3f4f6"/></svg>` }
+        ]
+      },
+      {
+        category: "Astronomía",
+        question: "3 son galaxias compuestas por miles de millones de estrellas. ¿Cuál es la impostora?",
+        explanation: "¡La Nebulosa de Orión es la impostora! Es una gigantesca nube de gas y polvo donde nacen estrellas, no una galaxia entera.",
+        options: [
+          { name: "Vía Láctea", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="42" ry="18" fill="none" stroke="#a855f7" stroke-width="6" transform="rotate(-20 50 50)"/><circle cx="50" cy="50" r="10" fill="#fef08a"/></svg>` },
+          { name: "Andrómeda", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="45" ry="15" fill="none" stroke="#06b6d4" stroke-width="6" transform="rotate(25 50 50)"/><circle cx="50" cy="50" r="12" fill="#ffffff"/></svg>` },
+          { name: "Galaxia Sombrero", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="44" ry="12" fill="#38bdf8"/><circle cx="50" cy="46" r="14" fill="#fef08a"/><line x1="8" y1="50" x2="92" y2="50" stroke="#1e293b" stroke-width="3"/></svg>` },
+          { name: "Nebulosa Orión", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><path d="M30 30 Q 50 10 70 30 Q 90 50 70 70 Q 50 90 30 70 Q 10 50 30 30 Z" fill="#ec4899" opacity="0.8"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>` }
+        ]
+      },
+      {
+        category: "Astronomía",
+        question: "3 emiten su propia luz por fusión nuclear. ¿Cuál es la impostora?",
+        explanation: "¡La Luna es la impostora! Es un satélite natural rocoso y no produce luz propia, solo refleja la luz del Sol.",
+        options: [
+          { name: "El Sol", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="28" fill="#f59e0b"/><path d="M50 10 L50 18 M50 82 L50 90 M10 50 L18 50 M82 50 L90 50 M22 22 L28 28 M72 72 L78 78 M22 78 L28 72 M72 22 L78 28" stroke="#fbbf24" stroke-width="5" stroke-linecap="round"/></svg>` },
+          { name: "Sirio", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M50 15 L58 42 L85 50 L58 58 L50 85 L42 58 L15 50 L42 42 Z" fill="#38bdf8"/></svg>` },
+          { name: "Betelgeuse", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M50 12 L59 40 L88 50 L59 60 L50 88 L41 60 L12 50 L41 40 Z" fill="#ef4444"/></svg>` },
+          { name: "La Luna", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><path d="M50 15 A 35 35 0 1 0 85 50 A 28 28 0 1 1 50 15 Z" fill="#cbd5e1"/></svg>` }
+        ]
+      },
+      {
+        category: "Astronomía",
+        question: "3 se usan para observar astros en el espacio. ¿Cuál es el impostor?",
+        explanation: "¡El Microscopio es el impostor! Se utiliza para ver objetos diminutos como células o bacterias en biología, no en astronomía.",
+        options: [
+          { name: "Telescopio James Webb", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><polygon points="50,20 65,30 65,50 50,60 35,50 35,30" fill="#f59e0b" stroke="#b45309" stroke-width="2"/><rect x="42" y="62" width="16" height="25" fill="#94a3b8"/></svg>` },
+          { name: "Telescopio Hubble", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="35" y="20" width="30" height="50" rx="5" fill="#cbd5e1" transform="rotate(-15 50 45)"/><rect x="15" y="40" width="70" height="10" fill="#0284c7" transform="rotate(-15 50 45)"/></svg>` },
+          { name: "Radiotelescopio ALMA", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M20 50 Q 50 20 80 50 Z" fill="#e2e8f0"/><line x1="50" y1="50" x2="50" y2="75" stroke="#64748b" stroke-width="6"/><rect x="35" y="75" width="30" height="8" fill="#475569"/></svg>` },
+          { name: "Microscopio", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><path d="M60 20 L40 40 M35 35 L45 25 M30 75 L70 75 M50 45 L50 75 M40 55 C 20 55 20 75 40 75" stroke="#38bdf8" stroke-width="6" fill="none" stroke-linecap="round"/></svg>` }
+        ]
+      },
+      {
+        category: "Astronomía",
+        question: "3 son patrones de estrellas visibles en el cielo nocturno. ¿Cuál es el impostor?",
+        explanation: "¡El Agujero Negro es el impostor! Es una región con una gravedad tan intensa que nada puede escapar de ella, no una agrupación de estrellas.",
+        options: [
+          { name: "Orión", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="30" cy="25" r="4" fill="#fff"/><circle cx="70" cy="25" r="4" fill="#fff"/><circle cx="40" cy="50" r="3" fill="#38bdf8"/><circle cx="50" cy="50" r="3" fill="#38bdf8"/><circle cx="60" cy="50" r="3" fill="#38bdf8"/><circle cx="35" cy="80" r="4" fill="#fff"/><circle cx="65" cy="80" r="4" fill="#fff"/><line x1="30" y1="25" x2="70" y2="25" stroke="rgba(255,255,255,0.3)"/><line x1="40" y1="50" x2="60" y2="50" stroke="rgba(255,255,255,0.3)"/></svg>` },
+          { name: "Osa Mayor", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M15 30 L30 35 L42 48 L55 52 L58 75 L82 72 L78 50 Z" fill="none" stroke="#38bdf8" stroke-width="2"/><circle cx="15" cy="30" r="4" fill="#fff"/><circle cx="30" cy="35" r="4" fill="#fff"/><circle cx="42" cy="48" r="4" fill="#fff"/><circle cx="55" cy="52" r="4" fill="#fff"/><circle cx="78" cy="50" r="4" fill="#fff"/><circle cx="82" cy="72" r="4" fill="#fff"/><circle cx="58" cy="75" r="4" fill="#fff"/></svg>` },
+          { name: "Cassiopeia", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M15 60 L32 30 L50 55 L70 25 L88 45" fill="none" stroke="#ec4899" stroke-width="3"/><circle cx="15" cy="60" r="4" fill="#fff"/><circle cx="32" cy="30" r="4" fill="#fff"/><circle cx="50" cy="55" r="4" fill="#fff"/><circle cx="70" cy="25" r="4" fill="#fff"/><circle cx="88" cy="45" r="4" fill="#fff"/></svg>` },
+          { name: "Agujero Negro", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="22" fill="#000" stroke="#f59e0b" stroke-width="6"/><ellipse cx="50" cy="50" rx="42" ry="12" fill="none" stroke="#f97316" stroke-width="4" transform="rotate(-15 50 50)"/></svg>` }
+        ]
+      },
+      {
+        category: "Astronomía",
+        question: "3 son objetos naturales del espacio. ¿Cuál es el impostor?",
+        explanation: "¡La Estación Espacial Internacional (EEI) es la impostora! Es un satélite artificial construido por seres humanos que orbita la Tierra.",
+        options: [
+          { name: "Cometa Halley", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M30 65 L85 15 L70 70 Z" fill="#38bdf8" opacity="0.6"/><circle cx="30" cy="65" r="12" fill="#e2e8f0"/></svg>` },
+          { name: "Asteroide Ceres", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M30 25 Q 65 15 75 40 Q 85 70 55 80 Q 20 85 25 55 Z" fill="#64748b"/><circle cx="40" cy="40" r="5" fill="#475569"/><circle cx="60" cy="60" r="8" fill="#475569"/></svg>` },
+          { name: "Meteorito", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M20 20 L40 10 L70 30 L60 70 L30 80 Z" fill="#78350f"/><path d="M60 70 L90 90 M70 30 L95 50" stroke="#ef4444" stroke-width="4"/></svg>` },
+          { name: "Estación Espacial", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><rect x="42" y="20" width="16" height="60" fill="#cbd5e1"/><rect x="10" y="35" width="80" height="10" fill="#0284c7"/><rect x="10" y="55" width="80" height="10" fill="#0284c7"/></svg>` }
+        ]
+      },
+      {
+        category: "Cultura Pop & Juegos",
+        question: "3 son consolas portátiles o de videojuegos. ¿Cuál es el impostor?",
+        explanation: "¡La Tostadora es la impostora! Es un electrodoméstico para la cocina, no un dispositivo para jugar videojuegos.",
+        options: [
+          { name: "Nintendo Switch", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="15" y="30" width="70" height="40" rx="8" fill="#1e293b"/><rect x="15" y="30" width="20" height="40" rx="6" fill="#ef4444"/><rect x="65" y="30" width="20" height="40" rx="6" fill="#06b6d4"/></svg>` },
+          { name: "PlayStation 5", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="35" y="15" width="30" height="70" rx="5" fill="#000"/><path d="M30 15 Q 35 50 30 85" stroke="#fff" stroke-width="4" fill="none"/><path d="M70 15 Q 65 50 70 85" stroke="#fff" stroke-width="4" fill="none"/></svg>` },
+          { name: "Steam Deck", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="10" y="30" width="80" height="40" rx="10" fill="#334155"/><rect x="30" y="35" width="40" height="30" fill="#0284c7"/></svg>` },
+          { name: "Tostadora", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><rect x="20" y="40" width="60" height="40" rx="8" fill="#94a3b8"/><rect x="30" y="25" width="18" height="15" rx="3" fill="#d97706"/><rect x="52" y="25" width="18" height="15" rx="3" fill="#d97706"/></svg>` }
+        ]
+      },
+      {
+        category: "Mundo Animal",
+        question: "3 son mamíferos marinos que respiran aire. ¿Cuál es el impostor?",
+        explanation: "¡El Tiburón Blanco es el impostor! Es un pez cartilaginoso y respira bajo el agua usando agallas, no pulmones.",
+        options: [
+          { name: "Delfín", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M20 60 Q 40 20 80 40 Q 60 70 20 60 Z" fill="#0284c7"/><path d="M50 32 L60 20 L58 35 Z" fill="#0284c7"/></svg>` },
+          { name: "Ballena Azul", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M10 50 Q 50 20 85 50 Q 50 80 10 50 Z" fill="#38bdf8"/><path d="M75 50 L95 35 L90 50 L95 65 Z" fill="#0284c7"/></svg>` },
+          { name: "Nutria Marina", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="30" ry="20" fill="#78350f"/><circle cx="25" cy="50" r="12" fill="#b45309"/></svg>` },
+          { name: "Tiburón Blanco", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><path d="M10 50 Q 40 20 85 50 Q 40 70 10 50 Z" fill="#64748b"/><polygon points="45,32 60,10 58,35" fill="#475569"/><polygon points="30,50 20,42 20,58" fill="#ef4444"/></svg>` }
+        ]
+      },
+      {
+        category: "Prehistoria",
+        question: "3 eran temibles dinosaurios carnívoros. ¿Cuál es el impostor?",
+        explanation: "¡El Triceratops es el impostor! Era un dinosaurio herbívoro que usaba sus tres cuernos para defenderse.",
+        options: [
+          { name: "T-Rex", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M20 70 L40 40 L70 30 L85 45 L65 55 L50 80 Z" fill="#15803d"/><polygon points="70,45 75,48 70,50" fill="#fff"/></svg>` },
+          { name: "Velociraptor", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M15 75 Q 40 50 80 30 L85 42 L60 60 Z" fill="#047857"/><path d="M80 30 L95 32 L85 40 Z" fill="#a3e635"/></svg>` },
+          { name: "Spinosaurus", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M20 70 Q 50 30 80 40 L60 80 Z" fill="#b45309"/><path d="M35 50 Q 50 15 65 45 Z" fill="#ef4444"/></svg>` },
+          { name: "Triceratops", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><ellipse cx="45" cy="60" rx="30" ry="20" fill="#65a30d"/><path d="M65 45 L85 30 L70 55 L90 50 Z" fill="#4d7c0f"/><circle cx="75" cy="55" r="3" fill="#000"/></svg>` }
+        ]
+      },
+      {
+        category: "Deportes Extremos",
+        question: "3 son deportes que usan una tabla para deslizarse. ¿Cuál es el impostor?",
+        explanation: "¡El Ciclismo BMX es el impostor! Se practica usando una bicicleta especial, no una tabla.",
+        options: [
+          { name: "Skateboarding", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="15" y="45" width="70" height="10" rx="5" fill="#f59e0b"/><circle cx="30" cy="62" r="6" fill="#f3f4f6"/><circle cx="70" cy="62" r="6" fill="#f3f4f6"/></svg>` },
+          { name: "Surf", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M15 50 Q 50 20 85 50 Q 50 65 15 50 Z" fill="#06b6d4" transform="rotate(-30 50 50)"/></svg>` },
+          { name: "Snowboard", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="15" y="45" width="70" height="12" rx="6" fill="#ec4899" transform="rotate(15 50 50)"/></svg>` },
+          { name: "Ciclismo BMX", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><circle cx="30" cy="60" r="16" fill="none" stroke="#e11d48" stroke-width="5"/><circle cx="70" cy="60" r="16" fill="none" stroke="#e11d48" stroke-width="5"/><path d="M30 60 L50 60 L60 40 L40 40 Z" fill="none" stroke="#fff" stroke-width="4"/></svg>` }
+        ]
+      },
+      {
+        category: "Superhéroes",
+        question: "3 dependen de armaduras o alta tecnología para luchar. ¿Cuál es el impostor?",
+        explanation: "¡Superman es el impostor! Sus superpoderes son 100% biológicos debido a su origen extraterrestre (kryptoniano) y la luz del Sol. No usa armadura tecnológica.",
+        options: [
+          { name: "Iron Man", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="30" y="20" width="40" height="60" rx="15" fill="#dc2626"/><rect x="38" y="35" width="24" height="20" fill="#f59e0b"/><circle cx="50" cy="65" r="8" fill="#38bdf8"/></svg>` },
+          { name: "Batman", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M30 30 L40 20 L50 35 L60 20 L70 30 L65 75 L35 75 Z" fill="#1e293b"/><ellipse cx="50" cy="55" rx="12" ry="6" fill="#f59e0b"/></svg>` },
+          { name: "Cyborg", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="#94a3b8"/><path d="M50 20 A 30 30 0 0 1 80 50 L50 50 Z" fill="#cbd5e1"/><circle cx="62" cy="45" r="6" fill="#ef4444"/></svg>` },
+          { name: "Superman", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><path d="M30 20 L70 20 L80 80 L20 80 Z" fill="#ef4444" opacity="0.5"/><rect x="32" y="30" width="36" height="45" rx="10" fill="#2563eb"/><polygon points="50,40 60,48 55,60 45,60 40,48" fill="#f59e0b"/><text x="46" y="55" fill="#dc2626" font-weight="bold" font-size="14">S</text></svg>` }
+        ]
+      },
+      {
+        category: "Postres Dulces",
+        question: "3 son postres dulces congelados o horneados. ¿Cuál es el impostor?",
+        explanation: "¡El Sushi es el impostor! Es un plato salado de origen japonés a base de arroz y pescado o verduras.",
+        options: [
+          { name: "Helado", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><polygon points="35,50 65,50 50,90" fill="#d97706"/><circle cx="50" cy="42" r="20" fill="#ec4899"/></svg>` },
+          { name: "Donut", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="#b45309"/><circle cx="50" cy="50" r="12" fill="#0b0d19"/><path d="M22 45 Q 35 30 50 35 Q 65 30 78 45" stroke="#f472b6" stroke-width="8" fill="none"/></svg>` },
+          { name: "Cupcake", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M30 50 L35 85 L65 85 L70 50 Z" fill="#f59e0b"/><path d="M25 50 Q 50 20 75 50 Z" fill="#38bdf8"/><circle cx="50" cy="28" r="6" fill="#ef4444"/></svg>` },
+          { name: "Sushi", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><rect x="25" y="35" width="50" height="30" rx="6" fill="#f8fafc"/><rect x="25" y="35" width="50" height="12" rx="3" fill="#ef4444"/><rect x="44" y="35" width="12" height="30" fill="#15803d"/></svg>` }
+        ]
+      },
+      {
+        category: "Tecnología",
+        question: "3 son inventos reales que existen hoy en día. ¿Cuál es el impostor?",
+        explanation: "¡El Teletransportador es el impostor! Es un dispositivo de ciencia ficción y aún no existe en la vida real.",
+        options: [
+          { name: "Impresora 3D", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="20" y="30" width="60" height="50" rx="5" fill="#334155"/><rect x="35" y="45" width="30" height="20" fill="#38bdf8"/></svg>` },
+          { name: "Dron con cámara", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><circle cx="30" cy="30" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="70" cy="30" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="30" cy="70" r="12" fill="none" stroke="#fff" stroke-width="3"/><circle cx="70" cy="70" r="12" fill="none" stroke="#fff" stroke-width="3"/><rect x="40" y="40" width="20" height="20" fill="#0284c7"/></svg>` },
+          { name: "Gafas RV", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="20" y="35" width="60" height="30" rx="10" fill="#f3f4f6"/><circle cx="35" cy="50" r="8" fill="#000"/><circle cx="65" cy="50" r="8" fill="#000"/></svg>` },
+          { name: "Teletransportador", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="75" rx="35" ry="10" fill="#a855f7"/><path d="M30 75 L30 25 L70 25 L70 75" fill="none" stroke="#c084fc" stroke-width="3" stroke-dasharray="4"/></svg>` }
+        ]
+      },
+      {
+        category: "Mundo Animado",
+        question: "3 son famosos personajes marinos de dibujos animados. ¿Cuál es el impostor?",
+        explanation: "¡Shrek es el impostor! Es un ogro verde que vive en un pantano en la tierra, no bajo el mar.",
+        options: [
+          { name: "Bob Esponja", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><rect x="25" y="25" width="50" height="50" rx="5" fill="#facc15"/><circle cx="38" cy="40" r="6" fill="#fff"/><circle cx="62" cy="40" r="6" fill="#fff"/><circle cx="38" cy="40" r="2" fill="#0284c7"/><circle cx="62" cy="40" r="2" fill="#0284c7"/></svg>` },
+          { name: "Nemo", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M20 50 Q 50 20 80 50 Q 50 80 20 50 Z" fill="#f97316"/><rect x="40" y="28" width="10" height="44" fill="#fff"/></svg>` },
+          { name: "Patricio Estrella", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M50 15 L62 40 L88 45 L68 62 L75 88 L50 72 L25 88 L32 62 L12 45 L38 40 Z" fill="#f472b6"/></svg>` },
+          { name: "Shrek", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="#84cc16"/><path d="M18 35 Q 25 30 28 40 Z" fill="#65a30d"/><path d="M82 35 Q 75 30 72 40 Z" fill="#65a30d"/></svg>` }
+        ]
+      },
+      {
+        category: "Desafío Galáctico Final",
+        question: "3 son montañas o volcanes en la Tierra. ¿Cuál es el impostor?",
+        explanation: "¡El Monte Olimpo es el impostor! No está en la Tierra, ¡es el volcán más grande de todo el Sistema Solar y se encuentra en el planeta Marte!",
+        options: [
+          { name: "Monte Everest", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><polygon points="15,85 50,20 85,85" fill="#64748b"/><polygon points="40,38 50,20 60,38" fill="#fff"/></svg>` },
+          { name: "Volcán Fuji", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><polygon points="20,85 50,30 80,85" fill="#475569"/><polygon points="42,44 50,30 58,44" fill="#fff"/></svg>` },
+          { name: "Monte Kilimanjaro", isImpostor: false, svg: `<svg viewBox="0 0 100 100"><path d="M15 85 L45 35 L55 35 L85 85 Z" fill="#334155"/><path d="M38 47 L45 35 L55 35 L62 47 Z" fill="#fff"/></svg>` },
+          { name: "Monte Olimpo (Marte)", isImpostor: true, svg: `<svg viewBox="0 0 100 100"><path d="M10 85 Q 50 40 90 85 Z" fill="#ef4444"/><ellipse cx="50" cy="62" rx="12" ry="4" fill="#7f1d1d"/></svg>` }
+        ]
+      }
+    ];
+
+    let currentLevel = 0;
+    let score = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let answered = false;
+
+    // Función para mezclar arreglos al azar (Algoritmo Fisher-Yates)
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function loadLevel() {
+      answered = false;
+      const level = levels[currentLevel];
+
+      // Actualizar encabezados y progreso
+      document.getElementById('levelText').innerText = `${currentLevel + 1} / ${levels.length}`;
+      document.getElementById('scoreText').innerText = score;
+      document.getElementById('streakText').innerText = `🔥 ${streak}`;
+      document.getElementById('categoryTag').innerText = level.category;
+      document.getElementById('questionTitle').innerText = level.question;
+      
+      const progressPercent = ((currentLevel) / levels.length) * 100;
+      document.getElementById('progressBar').style.width = `${progressPercent}%`;
+
+      // Ocultar modal de explicación
+      document.getElementById('explanationModal').style.display = 'none';
+
+      // Mezclar las opciones para que el impostor aparezca en posiciones distintas
+      const shuffledOptions = shuffleArray(level.options);
+
+      // Renderizar tarjetas
+      const grid = document.getElementById('cardsGrid');
+      grid.innerHTML = '';
+
+      shuffledOptions.forEach((opt) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-svg-wrapper">${opt.svg}</div>
+          <div class="card-title">${opt.name}</div>
+        `;
+        card.onclick = () => handleSelect(card, opt.isImpostor);
+        grid.appendChild(card);
+      });
+    }
+
+    function handleSelect(selectedCard, isImpostor) {
+      if (answered) return;
+      answered = true;
+
+      const allCards = document.querySelectorAll('.card');
+      allCards.forEach(c => c.classList.add('disabled'));
+
+      const expModal = document.getElementById('explanationModal');
+      const expTitle = document.getElementById('explanationTitle');
+      const expText = document.getElementById('explanationText');
+
+      if (isImpostor) {
+        selectedCard.classList.add('correct');
+        playSound('correct');
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+        const pts = 100 + (streak * 20);
+        score += pts;
+        
+        expTitle.innerText = `¡CORRECTO! 🎯 (+${pts} pts)`;
+        expTitle.style.color = "var(--correct-color)";
+      } else {
+        selectedCard.classList.add('wrong');
+        playSound('wrong');
+        streak = 0;
+        
+        // Destacar la respuesta correcta (impostor)
+        const level = levels[currentLevel];
+        allCards.forEach(c => {
+          const title = c.querySelector('.card-title').innerText;
+          const isTargetImpostor = level.options.find(o => o.name === title)?.isImpostor;
+          if (isTargetImpostor) c.classList.add('correct');
+        });
+
+        expTitle.innerText = "¡OH NO! ESE NO ERA EL IMPOSTOR ❌";
+        expTitle.style.color = "var(--wrong-color)";
+      }
+
+      expText.innerText = levels[currentLevel].explanation;
+      expModal.style.display = 'flex';
+      
+      document.getElementById('scoreText').innerText = score;
+      document.getElementById('streakText').innerText = `🔥 ${streak}`;
+    }
+
+    function nextLevel() {
+      currentLevel++;
+      if (currentLevel < levels.length) {
+        loadLevel();
+      } else {
+        showEndGame();
+      }
+    }
+
+    function showEndGame() {
+      document.getElementById('progressBar').style.width = `100%`;
+      const endModal = document.getElementById('endModal');
+      document.getElementById('finalScore').innerText = score;
+
+      let rank = "¡Excelente Trabajo, Detective!";
+      if (score >= 1800) rank = "🏆 ¡SUPER DETECTIVE GALÁCTICO SUPREMO!";
+      else if (score >= 1200) rank = "🚀 ¡EXPLORADOR ESPACIAL EXPERTO!";
+
+      document.getElementById('endRank').innerText = `${rank}\nTu mejor racha fue de ${maxStreak} aciertos seguidos.`;
+      endModal.style.display = 'flex';
+    }
+
+    function restartGame() {
+      currentLevel = 0;
+      score = 0;
+      streak = 0;
+      maxStreak = 0;
+      document.getElementById('endModal').style.display = 'none';
+      loadLevel();
+    }
+
+    // Iniciar juego al cargar
+    loadLevel();
+  </script>
+</body>
+</html>
